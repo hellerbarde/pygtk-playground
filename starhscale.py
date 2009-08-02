@@ -107,7 +107,7 @@ class StarHScale(gtk.Widget):
 		self.window.move_resize(*self.allocation)
 		
 		# load the star xpm
-		self.pixmap=gtk.gdk.pixbuf_new_from_file("star_dark.svg")
+		self.pixmap=gtk.gdk.pixbuf_new_from_file_at_size("star_dark.svg",22,22)
 		
 # 		self.pixmap = gtk.Image()
 # 		self.pixmap.set_from_file("star.png")
@@ -157,11 +157,11 @@ class StarHScale(gtk.Widget):
 		#Draw the correct number of stars.  Each time you draw another star
 		#move over by 22 pixels. which is the size of the star.
 		for count in range(0,self.stars):
-			self.window.draw_pixbuf(self.gc, self.pixmap, 0, 0 #gc, pixbuf, src_x, src_y
-												, self.sizes[count] #dest_x, 
-												, 0,-1, -1 #dest_y, wid, hei, 
-												, gtk.gdk.RGB_DITHER_NORMAL #dither,
-												, 0, 0)
+			self.window.draw_pixbuf(	self.gc, self.pixmap, 0, 0  # gc, pixbuf, src_x, src_y
+										, self.sizes[count]         # dest_x, 
+										, 0, -1, -1                 # dest_y, wid, hei, 
+										, gtk.gdk.RGB_DITHER_NORMAL # dither,
+										, 0, 0)
 
 		# Draw the number
 		if (self.number_is_visible == 1):
