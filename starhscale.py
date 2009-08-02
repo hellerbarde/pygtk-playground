@@ -51,7 +51,10 @@ class StarHScale(gtk.Widget):
 		
 		self.max_stars = max_stars
 		self.stars = stars
+		self.faded_stars = 0
 		self.number_is_visible = 0
+		self.dots_are_visible = 0
+		self.fadedstars_are_visible = 0
 		# Init the list to blank
 		self.sizes = []
 		for count in range(0,self.max_stars):
@@ -107,7 +110,9 @@ class StarHScale(gtk.Widget):
 		self.window.move_resize(*self.allocation)
 		
 		# load the star xpm
-		self.pixmap=gtk.gdk.pixbuf_new_from_file_at_size("star_dark.svg",22,22)
+		self.pixbuf_point=gtk.gdk.pixbuf_new_from_file_at_size("dot_light.svg",22,22)
+		self.pixbuf_star=gtk.gdk.pixbuf_new_from_file_at_size("star_dark.svg",22,22)
+		self.pixbuf_faded_star=gtk.gdk.pixbuf_new_from_file_at_size("star_light.svg",22,22)
 		
 # 		self.pixmap = gtk.Image()
 # 		self.pixmap.set_from_file("star.png")
@@ -123,7 +128,6 @@ class StarHScale(gtk.Widget):
 # 		self.connect("expose_event", self.do_expose_event)
 		self.connect("motion_notify_event", self.motion_notify_event)
 		self.connect("leave_notify_event", self.do_leave_event)
-# 		self.allocation = gtk.gdk.Rectangle(0,0, 220, 22)
 		
 	def do_unrealize(self):
 		# The do_unrealized method is responsible for freeing the GDK resources
@@ -139,8 +143,7 @@ class StarHScale(gtk.Widget):
 		
 		requisition.height = PIXMAP_SIZE
 		requisition.width = (PIXMAP_SIZE * self.max_stars) + (BORDER_WIDTH * 2)
-	
-	
+
 	def do_size_allocate(self, allocation):
 		"""The do_size_allocate is called by when the actual 
 		size is known and the widget is told how much space 
@@ -153,11 +156,24 @@ class StarHScale(gtk.Widget):
 		
 	def do_expose_event(self, event):
 		"""This is where the widget must draw itself."""
-
 		#Draw the correct number of stars.  Each time you draw another star
 		#move over by 22 pixels. which is the size of the star.
+		if (self.dots_are_visible == 1):
+			for count in range(0,5):
+				self.window.draw_pixbuf(	self.gc, self.pixbuf_point, 0, 0  # gc, pixbuf, src_x, src_y
+											, self.sizes[count]         # dest_x, 
+											, 0, -1, -1                 # dest_y, wid, hei, 
+											, gtk.gdk.RGB_DITHER_NORMAL # dither,
+											, 0, 0)
+		if (self.fadedstars_are_visible == 1):
+			for count in range(0,self.faded_stars):
+				self.window.draw_pixbuf(	self.gc, self.pixbuf_faded_star, 0, 0  # gc, pixbuf, src_x, src_y
+											, self.sizes[count]         # dest_x, 
+											, 0, -1, -1                 # dest_y, wid, hei, 
+											, gtk.gdk.RGB_DITHER_NORMAL # dither,
+											, 0, 0)
 		for count in range(0,self.stars):
-			self.window.draw_pixbuf(	self.gc, self.pixmap, 0, 0  # gc, pixbuf, src_x, src_y
+			self.window.draw_pixbuf(	self.gc, self.pixbuf_star, 0, 0  # gc, pixbuf, src_x, src_y
 										, self.sizes[count]         # dest_x, 
 										, 0, -1, -1                 # dest_y, wid, hei, 
 										, gtk.gdk.RGB_DITHER_NORMAL # dither,
@@ -166,7 +182,7 @@ class StarHScale(gtk.Widget):
 		# Draw the number
 		if (self.number_is_visible == 1):
 			self.playout = pango.Layout(self.pcontext)
-			self.playout.set_font_description(pango.FontDescription("sans bold 10"))
+			self.playout.set_font_description(pango.FontDescription("sans bold 8"))
 			self.playout.set_text(str(self.stars))
 			(w,h) = self.playout.get_pixel_size()
 			lx = self.widget_width/2-w/2
@@ -182,20 +198,24 @@ class StarHScale(gtk.Widget):
 			x = event.x
 			y = event.y
 			state = event.state
-		
+		self.number_is_visible = 0
+		self.dots_are_visible = 1
+		self.fadedstars_are_visible = 1
+		self.check_for_faded_stars(event.x)
+
 		new_stars = 1
 		if (state & gtk.gdk.BUTTON1_MASK):
 			# loop through the sizes and see if the
 			# number of stars should change
-			self.number_is_visible = 1
 			self.check_for_new_stars(event.x)
 		else:
-			self.number_is_visible = 1
 			self.window.invalidate_rect(self.allocation,True)
 
 	def do_leave_event(self, widget, event):
 		# hide the number if the mouse leaves the widget
+		self.dots_are_visible = 0
 		self.number_is_visible = 0
+		self.fadedstars_are_visible = 0
 		self.window.invalidate_rect(self.allocation,True)
 			
 	def do_button_press_event(self, event):
@@ -203,7 +223,7 @@ class StarHScale(gtk.Widget):
 		# make sure it was the first button
 		if event.button == 1:
 			#check for new stars
-			self.number_is_visible = 1
+			self.number_is_visible = 0
 			self.window.invalidate_rect(self.allocation,True)
 			self.check_for_new_stars(event.x)
 		return True
@@ -227,6 +247,20 @@ class StarHScale(gtk.Widget):
 		#set the new value
 		self.set_value(new_stars)
 			
+	def check_for_faded_stars(self, xPos):
+		# loop through the sizes and see if the
+		# number of stars should change
+		faded_stars = 0
+		for size in self.sizes:
+			if (xPos < size):
+				# we've reached the star number
+				break
+			faded_stars = faded_stars + 1
+		if (faded_stars == 0):
+			faded_stars = 1
+		self.faded_stars = faded_stars
+
+
 	def set_value(self, value):
 		"""Sets the current number of stars that will be 
 		drawn.  If the number is different then the current
