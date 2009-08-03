@@ -22,6 +22,7 @@ If you find any bugs or have any suggestions email: selsine@gmail.coim
 """
 
 try:
+	import math
 	import gtk
   	import gobject
   	from gtk import gdk
@@ -36,6 +37,7 @@ if gtk.pygtk_version < (2, 0):
 
 BORDER_WIDTH = 5
 PIXMAP_SIZE = 22
+NR_VIS = 0
 
 class StarHScale(gtk.Widget):
 	"""A horizontal Scale Widget that attempts to mimic the star
@@ -159,7 +161,7 @@ class StarHScale(gtk.Widget):
 		#Draw the correct number of stars.  Each time you draw another star
 		#move over by 22 pixels. which is the size of the star.
 		if (self.dots_are_visible == 1):
-			for count in range(0,5):
+			for count in range(0,self.max_stars):
 				self.window.draw_pixbuf(	self.gc, self.pixbuf_point, 0, 0  # gc, pixbuf, src_x, src_y
 											, self.sizes[count]         # dest_x, 
 											, 0, -1, -1                 # dest_y, wid, hei, 
@@ -185,9 +187,31 @@ class StarHScale(gtk.Widget):
 			self.playout.set_font_description(pango.FontDescription("sans bold 8"))
 			self.playout.set_text(str(self.stars))
 			(w,h) = self.playout.get_pixel_size()
-			lx = self.widget_width/2-w/2
+			lx = self.widget_width/2 -w/2
 			ly = self.widget_height/2-h/2
-			self.window.draw_layout(self.gc,lx,ly,self.playout)
+			circle_r = h-2
+			cx = self.widget_width/2
+			cy = self.widget_height/2
+			context = self.window.cairo_create()
+			if (self.stars <= self.max_stars/2):
+				context.arc(cx, cy, circle_r/2, 0, 2.0 * math.pi)
+				context.set_source_rgb(0.2, 0.2, 0.2)
+				context.fill_preserve()
+			context.select_font_face("sans")
+			context.set_font_size(6)
+			context.set_source_rgb(0.7, 0.7, 0.7)			
+			x_bearing, y_bearing, width, height = context.text_extents(str(self.stars))[:4]
+#			print (str(lx - width / 2)+" "+str(ly))
+			context.move_to(self.widget_width/2-width/2, self.widget_height/2+height/2)
+			context.show_text(str(self.stars))
+			
+#			context.set_source_rgb(0.7, 0.7, 0.7)
+#			context.text_path("foobar")
+#			context.fill_preserve()
+#			context.set_source_rgb(0, 0.5, 0)
+#			context.stroke()
+#			self.window.draw_arc(self.gc, True, cx, cy, circle_r, circle_r, 64*0, 64*360)
+#			self.window.draw_layout(self.gc,lx,ly,self.playout)
 
 	def motion_notify_event(self, widget, event):
 		# if this is a hint, then let's get all the necessary 
@@ -198,7 +222,7 @@ class StarHScale(gtk.Widget):
 			x = event.x
 			y = event.y
 			state = event.state
-		self.number_is_visible = 0
+		self.number_is_visible = NR_VIS
 		self.dots_are_visible = 1
 		self.fadedstars_are_visible = 1
 		self.check_for_faded_stars(event.x)
@@ -223,7 +247,7 @@ class StarHScale(gtk.Widget):
 		# make sure it was the first button
 		if event.button == 1:
 			#check for new stars
-			self.number_is_visible = 0
+			self.number_is_visible = NR_VIS
 			self.window.invalidate_rect(self.allocation,True)
 			self.check_for_new_stars(event.x)
 		return True
@@ -315,7 +339,7 @@ if __name__ == "__main__":
 	#win.resize(200,20)
 	win.connect('delete-event', gtk.main_quit)
 	
-	starScale = StarHScale()
+	starScale = StarHScale(10,1)
 	win.add(starScale)
 	
 	win.show_all()
