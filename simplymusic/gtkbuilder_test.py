@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import sys
-
+import gobject
+import pango
+import math
 try:
 	import pygtk
 	#tell pyGTK, if possible, that we want GTKv2
@@ -19,7 +21,13 @@ except:
 	print "try: export PYTHONPATH=",
 	print "/usr/local/lib/python2.2/site-packages/"
 	sys.exit(1)
+from starhscale import StarHScale
+# import cellrendererwidget
 
+
+BORDER_WIDTH = 5
+PIXMAP_SIZE = 22
+NR_VIS = 0
 
 class player_mainwindow:
 	"""This is an Hello World GTK application"""
@@ -38,13 +46,14 @@ class player_mainwindow:
 		self.addfile = self.builder.get_object('addfile')
 		self.clear = self.builder.get_object('clear')
 		self.save = self.builder.get_object('save')
-		self.playlist = self.builder.get_object('playlist')
+		self.playlistview = self.builder.get_object('playlist')
 		self.status_label = self.builder.get_object('status_label')
-		self.mdl = gtk.ListStore(str, str)
-		textrenderer = gtk.CellRendererText()
-		column1 = gtk.TreeViewColumn("Name", textrenderer, text=1)
+		gobject.type_register(StarHScale)
+		self.playliststore = gtk.ListStore(StarHScale, str)
+# 		textrenderer = gtk.CellRendererText()
+		column1 = gtk.TreeViewColumn("Name", gtk.CellRendererText(), text=0 )
 		column1.set_sort_column_id(0)
-		column2 = gtk.TreeViewColumn("Blubb", textrenderer, text=1)
+		column2 = gtk.TreeViewColumn("Blubb", gtk.CellRendererText(), text=1)
 		column2.set_sort_column_id(1)
 		if (self.window):
 			self.window.connect("destroy", gtk.main_quit)
@@ -53,25 +62,28 @@ class player_mainwindow:
 			self.addfile.connect("clicked", self.add_file_callback)
 			self.clear.connect("clicked", self.clear_playlist_callback)
 			self.save.connect("clicked", self.save_playlist_callback)
-			self.playlist.set_model(self.mdl)
-			self.playlist.append_column(column1)
-			self.playlist.append_column(column2)
-			self.playlist.set_headers_visible(True)
-			for row in self.data:
-				self.mdl.append(["blubb", "bla"])
-			self.window.show()
+			self.scale = StarHScale(5,1)
+			self.playliststore.append([self.scale,"bar"])
 			
-	data =  [ 
-			 ['hallo', 'welt'],
-			 ['test', 'me']
+			self.playlistview.set_model(self.playliststore)
+			self.playlistview.append_column(column1)
+			self.playlistview.append_column(column2)
+			self.playlistview.set_headers_visible(True)
+
+# 			for row in self.data:
+
+			self.window.show()
+	data =  [
+			 ["hallo", "welt"],
+			 ["test", "me"]
 			]
 
 	def add_folder_callback(self, button):
 		self.status_label.set_text("Muahahhahha")
 	def add_file_callback(self, button):
-		self.status_label.set_text("Muahahhahha")
+		self.playliststore.append(["foo","bar"])
 	def clear_playlist_callback(self, button):
-		self.status_label.set_text("Muahahhahha")
+		self.playliststore.append(["baz","snafu"])
 	def save_playlist_callback(self, button):
 		self.status_label.set_text("Muahahhahha")
 # 	def put_font_to_text(self, fontbutton):
